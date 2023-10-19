@@ -1,5 +1,6 @@
 package ru.netology.nmedia.activity
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -70,14 +71,17 @@ class FeedFragment : Fragment() {
             binding.emptyText.isVisible = state.empty
         }
         viewModel.newerCount.observe(viewLifecycleOwner) {
-            Log.d("FeedFragment", "Newer count $it")
 
             binding.extendedFab.isVisible = it > 0
-
+            if (it == 1) {
+                binding.extendedFab.text = getString(R.string.load_new_post, it)
+            } else if (it > 1) {
+                binding.extendedFab.text = getString(R.string.load_new_posts, it)
+            }
         }
 
         binding.extendedFab.setOnClickListener {
-            viewModel.showNewPosts()
+            viewModel.readAllPosts()
             binding.extendedFab.isVisible = false
 
         }
@@ -86,7 +90,6 @@ class FeedFragment : Fragment() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                 if (positionStart == 0) {
                     binding.list.smoothScrollToPosition(0)
-                    Log.d("AdapterDataObserver", "onItemRangeInserted - Scrolling to top")
                 }
             }
         })

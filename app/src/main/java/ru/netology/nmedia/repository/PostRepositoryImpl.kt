@@ -1,5 +1,6 @@
 package ru.netology.nmedia.repository
 
+import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -17,7 +18,7 @@ import ru.netology.nmedia.error.UnknownError
 import java.io.IOException
 
 class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
-    override val data = dao.getAll()
+    override var data: Flow<List<Post>> = dao.getAll()
         .map { postEntities -> postEntities.filter { !it.hidden } }
         .map(List<PostEntity>::toDto)
         .flowOn(Dispatchers.Default)
@@ -41,6 +42,9 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
     override fun getNewerCount(id: Long): Flow<Int> = flow {
         while (true) {
             delay(10_000L)
+
+            val maxId = dao.getMaxPostId()
+
             val response = PostsApi.service.getNewer(id)
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
@@ -48,10 +52,13 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
 
             val body = response.body() ?: throw ApiError(response.code(), response.message())
 
-
-            dao.insert(body.toEntity().map {
-                it.copy(hidden = true)
-            })
+            if (body.isNotEmpty()) {
+                if (maxId < body.maxOfOrNull { it.id }!!) {
+                    dao.insert(body.toEntity().map {
+                        it.copy(hidden = true)
+                    })
+                }
+            }
             emit(body.size)
         }
     }
@@ -82,7 +89,9 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
         TODO("Not yet implemented")
     }
 
-    override  suspend fun readAllPosts() {
+    override suspend fun readAllPosts() {
         dao.readAll()
+
+
     }
 }

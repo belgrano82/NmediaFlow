@@ -87,10 +87,10 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         edited.value = empty
     }
 
-    fun showNewPosts() = viewModelScope.launch {
+    fun readAllPosts() = viewModelScope.launch {
         try {
             repository.readAllPosts()
-            _dataState.value = FeedModelState()
+
         } catch (e: Exception) {
             _dataState.value = FeedModelState(error = true)
         }
